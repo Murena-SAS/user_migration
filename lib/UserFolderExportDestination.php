@@ -38,8 +38,7 @@ class UserFolderExportDestination extends ExportDestination {
 	 */
 	private $resource;
 
-	public function __construct(Folder $userFolder) {
-		$path = static::EXPORT_FILENAME;
+	public function __construct(Folder $userFolder, string $path) {
 		try {
 			// TODO Avoid version creation if possible
 			$file = $userFolder->get($path);

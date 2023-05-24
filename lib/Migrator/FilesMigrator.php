@@ -29,7 +29,6 @@ namespace OCA\UserMigration\Migrator;
 
 use OCA\Files\AppInfo\Application;
 use OCA\Files_Versions\Storage as FilesVersionsStorage;
-use OCA\UserMigration\ExportDestination;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Files\File;
@@ -73,6 +72,8 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 
 	protected IL10N $l10n;
 
+	private $userExportFiles;
+
 	public function __construct(
 		IRootFolder $rootFolder,
 		ITagManager $tagManager,
@@ -87,6 +88,7 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 		$this->systemTagMapper = $systemTagMapper;
 		$this->commentsManager = $commentsManager;
 		$this->l10n = $l10n;
+		$this->userExportFiles = [];
 	}
 
 	/**
@@ -103,12 +105,17 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 
 		// Export file itself is not exported so we subtract it if existing
 		try {
-			$exportFile = $userFolder->get(ExportDestination::EXPORT_FILENAME);
-			if (!($exportFile instanceof File)) {
-				throw new \InvalidArgumentException('User export is not a file');
+			$files = $userFolder->getDirectoryListing();
+			foreach ($files as $file) {
+				if (preg_match('/-murena-[0-9]{8}-[0-9]{4}.zip$/', $file->getName())) {
+					$size -= $file->getSize() / 1024;
+					$this->userExportFiles[] = $file->getName();
+					if (!($file instanceof File)) {
+						throw new \InvalidArgumentException('User export is not a file');
+					}
+				}
 			}
 
-			$size -= $exportFile->getSize() / 1024;
 		} catch (NotFoundException $e) {
 			// No size subtraction needed if export file doesn't exist
 		}
@@ -189,8 +196,10 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 		}
 
 		$objectIds = $this->collectIds($userFolder, $userFolder->getPath(), $nodeFilter);
-		unset($objectIds[ExportDestination::EXPORT_FILENAME]);
+		foreach($this->userExportFiles as $file) {
+			unset($objectIds[$file]);
 
+		}
 		$output->writeln("Exporting file tags…");
 
 		$tagger = $this->tagManager->load(Application::APP_ID, [], false, $uid);

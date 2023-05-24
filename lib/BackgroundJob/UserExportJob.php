@@ -85,7 +85,9 @@ class UserExportJob extends QueuedJob {
 			$export->setStatus(UserExport::STATUS_STARTED);
 			$this->mapper->update($export);
 			$userFolder = $this->root->getUserFolder($user);
-			$exportDestination = new UserFolderExportDestination($userFolder);
+			$uid = !str_contains($user, '@') ? $user : explode('@', $user)[0];
+			$exportFilename = $uid . '-murena-' . date('dmY-Hi') . '.zip';
+			$exportDestination = new UserFolderExportDestination($userFolder, $exportFilename);
 
 			$this->migrationService->export($exportDestination, $userObject, $migrators);
 			$this->successNotification($export);

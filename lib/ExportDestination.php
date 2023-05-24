@@ -34,8 +34,6 @@ use ZipStreamer\COMPR;
 use ZipStreamer\ZipStreamer;
 
 class ExportDestination implements IExportDestination {
-	public const EXPORT_FILENAME = 'user.nextcloud_export';
-
 	protected ZipStreamer $streamer;
 
 	protected string $path;
@@ -100,7 +98,7 @@ class ExportDestination implements IExportDestination {
 				continue;
 			}
 			if ($node instanceof File) {
-				if ($node->getName() === static::EXPORT_FILENAME) {
+				if (preg_match('/-murena-[0-9]{8}-[0-9]{4}.zip$/', $node->getName())) {
 					/* Skip previous user export file */
 					// FIXME only ignore root one using getPath()
 					continue;
