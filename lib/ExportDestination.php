@@ -34,6 +34,9 @@ use ZipStreamer\COMPR;
 use ZipStreamer\ZipStreamer;
 
 class ExportDestination implements IExportDestination {
+
+	public const EXPORT_FILE_REGEX = '/-murena-[0-9]{8}-[0-9]{4}.zip$/';
+
 	protected ZipStreamer $streamer;
 
 	protected string $path;
@@ -98,7 +101,7 @@ class ExportDestination implements IExportDestination {
 				continue;
 			}
 			if ($node instanceof File) {
-				if (preg_match('/-murena-[0-9]{8}-[0-9]{4}.zip$/', $node->getName())) {
+				if (preg_match(static::EXPORT_FILE_REGEX, $node->getName())) {
 					/* Skip previous user export file */
 					// FIXME only ignore root one using getPath()
 					continue;

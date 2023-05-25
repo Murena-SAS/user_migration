@@ -29,6 +29,7 @@ namespace OCA\UserMigration\Migrator;
 
 use OCA\Files\AppInfo\Application;
 use OCA\Files_Versions\Storage as FilesVersionsStorage;
+use OCA\UserMigration\ExportDestination;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Files\File;
@@ -107,7 +108,7 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 		try {
 			$files = $userFolder->getDirectoryListing();
 			foreach ($files as $file) {
-				if (preg_match('/-murena-[0-9]{8}-[0-9]{4}.zip$/', $file->getName())) {
+				if (preg_match(ExportDestination::EXPORT_FILE_REGEX, $file->getName())) {
 					$size -= $file->getSize() / 1024;
 					$this->userExportFiles[] = $file->getName();
 					if (!($file instanceof File)) {

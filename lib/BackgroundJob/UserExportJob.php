@@ -90,7 +90,7 @@ class UserExportJob extends QueuedJob {
 			$exportDestination = new UserFolderExportDestination($userFolder, $exportFilename);
 
 			$this->migrationService->export($exportDestination, $userObject, $migrators);
-			$this->successNotification($export);
+			$this->successNotification($export, $exportFilename);
 		} catch (\Throwable $e) {
 			$this->logger->error($e->getMessage(), ['exception' => $e]);
 			$this->failedNotication($export);
@@ -112,7 +112,7 @@ class UserExportJob extends QueuedJob {
 		$this->notificationManager->notify($notification);
 	}
 
-	private function successNotification(UserExport $export): void {
+	private function successNotification(UserExport $export, string $fileName): void {
 		// Send notification to user
 		$notification = $this->notificationManager->createNotification();
 		$notification->setUser($export->getSourceUser())
@@ -120,6 +120,7 @@ class UserExportJob extends QueuedJob {
 			->setDateTime($this->time->getDateTime())
 			->setSubject('exportDone', [
 				'sourceUser' => $export->getSourceUser(),
+				'fileName' => $fileName
 			])
 			->setObject('export', (string)$export->getId());
 		$this->notificationManager->notify($notification);

@@ -28,7 +28,6 @@ declare(strict_types=1);
 namespace OCA\UserMigration\Notification;
 
 use OCA\UserMigration\AppInfo\Application;
-use OCA\UserMigration\ExportDestination;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\IURLGenerator;
@@ -118,7 +117,7 @@ class Notifier implements INotifier {
 		$param = $notification->getSubjectParameters();
 
 		$sourceUser = $this->getUser($param['sourceUser']);
-		$exportFile = $this->getExportFile($sourceUser);
+		$exportFile = $this->getExportFile($sourceUser, $param['fileName']);
 
 		$path = rtrim($exportFile->getPath(), '/');
 		if (strpos($path, '/' . $notification->getUser() . '/files/') === 0) {
@@ -227,9 +226,9 @@ class Notifier implements INotifier {
 		throw new \InvalidArgumentException('User not found');
 	}
 
-	protected function getExportFile(IUser $user): File {
+	protected function getExportFile(IUser $user, string $fileName): File {
 		$userFolder = $this->root->getUserFolder($user->getUID());
-		$file = $userFolder->get(ExportDestination::EXPORT_FILENAME);
+		$file = $userFolder->get($fileName);
 		if (!$file instanceof File) {
 			throw new \InvalidArgumentException('User export is not a file');
 		}
