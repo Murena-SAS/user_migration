@@ -120,7 +120,7 @@ class UserExportJob extends QueuedJob {
 			->setDateTime($this->time->getDateTime())
 			->setSubject('exportDone', [
 				'sourceUser' => $export->getSourceUser(),
-				'fileName' => $fileName
+				'fileName' => $fileName,
 			])
 			->setObject('export', (string)$export->getId());
 		$this->notificationManager->notify($notification);
