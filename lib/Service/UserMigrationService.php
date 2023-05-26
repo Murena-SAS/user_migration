@@ -155,21 +155,6 @@ class UserMigrationService {
 		}
 
 		try {
-			$files = $userFolder->getDirectoryListing();
-			foreach ($files as $file) {
-				if (preg_match(ExportDestination::EXPORT_FILE_REGEX, $file->getName())) {
-					// Add previous export file size to free space as it will be overwritten if existing
-					$freeSpace += $file->getSize() / 1024;
-					if (!($file instanceof File)) {
-						throw new \InvalidArgumentException('User export is not a file');
-					}
-				}
-			}
-		} catch (NotFoundException $e) {
-			// No size addition needed if export file doesn't exist
-		}
-
-		try {
 			$exportSize = $this->estimateExportSize($user, $filteredMigratorList);
 		} catch (UserMigrationException $e) {
 			throw new NotExportableException('Error estimating export size');
