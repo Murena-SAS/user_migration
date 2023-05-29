@@ -73,8 +73,6 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 
 	protected IL10N $l10n;
 
-	private $userExportFiles;
-
 	public function __construct(
 		IRootFolder $rootFolder,
 		ITagManager $tagManager,
@@ -89,7 +87,6 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 		$this->systemTagMapper = $systemTagMapper;
 		$this->commentsManager = $commentsManager;
 		$this->l10n = $l10n;
-		$this->userExportFiles = [];
 	}
 
 	/**
@@ -188,10 +185,6 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 		}
 
 		$objectIds = $this->collectIds($userFolder, $userFolder->getPath(), $nodeFilter);
-		foreach($this->userExportFiles as $file) {
-			unset($objectIds[$file]);
-
-		}
 		$output->writeln("Exporting file tags…");
 
 		$tagger = $this->tagManager->load(Application::APP_ID, [], false, $uid);
@@ -261,6 +254,9 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 			}
 			$objectIds[preg_replace('/^'.preg_quote($rootPath, '/').'/', '', $node->getPath())] = $node->getId();
 			if ($node instanceof Folder) {
+				if ($node->getName() === ExportDestination::EXPORT_FOLDER_NAME) {
+					continue;
+				}
 				$this->collectIds($node, $rootPath, $nodeFilter, $objectIds);
 			} elseif (!($node instanceof File)) {
 				throw new UserMigrationException("Unsupported node type: ".get_class($node));
