@@ -36,6 +36,7 @@ use ZipStreamer\ZipStreamer;
 class ExportDestination implements IExportDestination {
 
 	public const EXPORT_FILE_REGEX = '/-murenacloud-export_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}.zip$/';
+	public const EXPORT_FOLDER_NAME = 'Exports';
 
 	protected ZipStreamer $streamer;
 
@@ -98,6 +99,9 @@ class ExportDestination implements IExportDestination {
 		$nodes = $folder->getDirectoryListing();
 		foreach ($nodes as $node) {
 			if (($nodeFilter !== null) && !$nodeFilter($node)) {
+				continue;
+			}
+			if ($node instanceof Folder && $node->getName() === static::EXPORT_FOLDER_NAME) {
 				continue;
 			}
 			if ($node instanceof File) {

@@ -30,9 +30,11 @@ use OCA\UserMigration\Db\UserExport;
 use OCA\UserMigration\Db\UserExportMapper;
 use OCA\UserMigration\Service\UserMigrationService;
 use OCA\UserMigration\UserFolderExportDestination;
+use OCA\UserMigration\ExportDestination;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\Files\IRootFolder;
+use OCP\Files\NotFoundException;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Notification\IManager as NotificationManager;
@@ -85,9 +87,14 @@ class UserExportJob extends QueuedJob {
 			$export->setStatus(UserExport::STATUS_STARTED);
 			$this->mapper->update($export);
 			$userFolder = $this->root->getUserFolder($user);
+			try {
+				$exportFolder = $userFolder->get(ExportDestination::EXPORT_FOLDER_NAME);
+			} catch (NotFoundException $e) {
+				$exportFolder = $userFolder->newFolder(ExportDestination::EXPORT_FOLDER_NAME);
+			}
 			$uid = !str_contains($user, '@') ? $user : explode('@', $user)[0];
 			$exportFilename = $uid . '-murenacloud-export_' . date('Y-m-d_H-i') . '.zip';
-			$exportDestination = new UserFolderExportDestination($userFolder, $exportFilename);
+			$exportDestination = new UserFolderExportDestination($exportFolder, $exportFilename);
 
 			$this->migrationService->export($exportDestination, $userObject, $migrators);
 			$this->successNotification($export, $exportFilename);

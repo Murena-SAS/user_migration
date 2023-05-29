@@ -28,8 +28,10 @@ declare(strict_types=1);
 namespace OCA\UserMigration\Notification;
 
 use OCA\UserMigration\AppInfo\Application;
+use OCA\UserMigration\ExportDestination;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
+use OCP\Files\NotFoundException;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -233,10 +235,11 @@ class Notifier implements INotifier {
 		if ($fileName === NULL) {
 			throw new \InvalidArgumentException('User export is a Null file');
 		}
-		$userFolder = $this->root->getUserFolder($user->getUID());
-		$file = $userFolder->get($fileName);
-		if (!$file instanceof File) {
-			throw new \InvalidArgumentException('User export is not a file');
+		try {
+			$userFolder = $this->root->getUserFolder($user->getUID())->get(ExportDestination::EXPORT_FOLDER_NAME);
+			$file = $userFolder->get($fileName);
+		} catch (NotFoundException $e) {
+			throw new \InvalidArgumentException('User export file not found');
 		}
 		return $file;
 	}

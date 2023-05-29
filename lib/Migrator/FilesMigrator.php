@@ -104,18 +104,13 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 
 		$size = $this->estimateFolderSize($userFolder, $nodeFilter) / 1024;
 
-		// Export file itself is not exported so we subtract it if existing
-		$files = $userFolder->getDirectoryListing();
-		foreach ($files as $file) {
-			if (preg_match(ExportDestination::EXPORT_FILE_REGEX, $file->getName())) {
-				$size -= $file->getSize() / 1024;
-				$this->userExportFiles[] = $file->getName();
-				if (!($file instanceof File)) {
-					throw new \InvalidArgumentException('User export is not a file');
-				}
-			}
+		// Ignore Exports folder
+		try {
+			$exportFolder = $userFolder->get(ExportDestination::EXPORT_FOLDER_NAME);
+			$size -= $exportFolder->getSize() / 1024;
+		} catch (NotFoundException $e) {
+			// No Exports folder found, so no need to remove its space
 		}
-
 
 		try {
 			$versionsFolder = $this->root->get('/'.$uid.'/'.FilesVersionsStorage::VERSIONS_ROOT);
