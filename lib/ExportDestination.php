@@ -35,7 +35,7 @@ use ZipStreamer\ZipStreamer;
 
 class ExportDestination implements IExportDestination {
 
-	public const EXPORT_FILE_REGEX = '/-murena-[0-9]{8}-[0-9]{4}.zip$/';
+	public const EXPORT_FILE_REGEX = '/-murenacloud-export_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}.zip$/';
 
 	protected ZipStreamer $streamer;
 
