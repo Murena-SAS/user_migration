@@ -35,6 +35,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCP\Defaults;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Notification\IManager as NotificationManager;
@@ -92,8 +93,10 @@ class UserExportJob extends QueuedJob {
 			} catch (NotFoundException $e) {
 				$exportFolder = $userFolder->newFolder(ExportDestination::EXPORT_FOLDER_NAME);
 			}
+			$defaults = new Defaults();
+			$instanceName = strtolower($defaults->getName());
 			$uid = !str_contains($user, '@') ? $user : explode('@', $user)[0];
-			$exportFilename = $uid . '-murenacloud-export_' . date('Y-m-d_H-i') . '.zip';
+			$exportFilename = $uid . '-' . $instanceName . '-export_' . date('Y-m-d_H-i') . '.zip';
 			$exportDestination = new UserFolderExportDestination($exportFolder, $exportFilename);
 
 			$this->migrationService->export($exportDestination, $userObject, $migrators);

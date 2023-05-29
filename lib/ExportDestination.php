@@ -28,6 +28,7 @@ namespace OCA\UserMigration;
 
 use OCP\Files\File;
 use OCP\Files\Folder;
+use OCP\Defaults;
 use OCP\UserMigration\IExportDestination;
 use OCP\UserMigration\UserMigrationException;
 use ZipStreamer\COMPR;
@@ -35,17 +36,21 @@ use ZipStreamer\ZipStreamer;
 
 class ExportDestination implements IExportDestination {
 
-	public const EXPORT_FILE_REGEX = '/-murenacloud-export_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}.zip$/';
 	public const EXPORT_FOLDER_NAME = 'Exports';
 
 	protected ZipStreamer $streamer;
 
 	protected string $path;
 
+	public string $exportFileRegex;
+
 	/**
 	 * @param resource $r resource to write the export into
 	 */
 	public function __construct($r, string $path) {
+		$defaults = new Defaults();
+		$name = strtolower($defaults->getName());
+		$this->exportFileRegex = "/-$name-export_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}.zip$/";
 		$this->streamer = new ZipStreamer(
 			[
 				'outstream' => $r,
@@ -105,7 +110,7 @@ class ExportDestination implements IExportDestination {
 				continue;
 			}
 			if ($node instanceof File) {
-				if (preg_match(static::EXPORT_FILE_REGEX, $node->getName())) {
+				if (preg_match($this->exportFileRegex, $node->getName())) {
 					/* Skip previous user export file */
 					// FIXME only ignore root one using getPath()
 					continue;
