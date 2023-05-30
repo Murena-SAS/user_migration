@@ -38,6 +38,8 @@ class ExportDestination implements IExportDestination {
 
 	public const EXPORT_FOLDER_NAME = 'Exports';
 
+	public const EXPORT_FILE_REGEX = 'export_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}.zip$/';
+
 	protected ZipStreamer $streamer;
 
 	protected string $path;
@@ -50,7 +52,7 @@ class ExportDestination implements IExportDestination {
 	public function __construct($r, string $path) {
 		$defaults = new Defaults();
 		$name = strtolower($defaults->getName());
-		$this->exportFileRegex = "/-$name-export_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}.zip$/";
+		$this->exportFileRegex = "/-$name-" . static::EXPORT_FILE_REGEX;;
 		$this->streamer = new ZipStreamer(
 			[
 				'outstream' => $r,
@@ -104,9 +106,6 @@ class ExportDestination implements IExportDestination {
 		$nodes = $folder->getDirectoryListing();
 		foreach ($nodes as $node) {
 			if (($nodeFilter !== null) && !$nodeFilter($node)) {
-				continue;
-			}
-			if ($node instanceof Folder && $node->getName() === static::EXPORT_FOLDER_NAME) {
 				continue;
 			}
 			if ($node instanceof File) {

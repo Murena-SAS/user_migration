@@ -41,6 +41,7 @@ use OCP\Files\NotFoundException;
 use OCP\IL10N;
 use OCP\ITagManager;
 use OCP\IUser;
+use OCP\Defaults;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use OCP\SystemTag\TagNotFoundException;
@@ -73,13 +74,16 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 
 	protected IL10N $l10n;
 
+	protected Defaults $defaults;
+
 	public function __construct(
 		IRootFolder $rootFolder,
 		ITagManager $tagManager,
 		ISystemTagManager $systemTagManager,
 		ISystemTagObjectMapper $systemTagMapper,
 		ICommentsManager $commentsManager,
-		IL10N $l10n
+		IL10N $l10n,
+		Defaults $defaults
 	) {
 		$this->root = $rootFolder;
 		$this->tagManager = $tagManager;
@@ -87,6 +91,7 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 		$this->systemTagMapper = $systemTagMapper;
 		$this->commentsManager = $commentsManager;
 		$this->l10n = $l10n;
+		$this->defaults = $defaults;
 	}
 
 	/**
@@ -248,15 +253,16 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 	 */
 	private function collectIds(Folder $folder, string $rootPath, ?callable $nodeFilter = null, array &$objectIds = []): array {
 		$nodes = $folder->getDirectoryListing();
+		$instanceName = $this->defaults->getName();
 		foreach ($nodes as $node) {
 			if (($nodeFilter !== null) && !$nodeFilter($node)) {
 				continue;
 			}
+			if ($node instanceof File && preg_match("/-$instanceName-" . ExportDestination::EXPORT_FILE_REGEX, $node->getName())) {
+				continue;
+			}
 			$objectIds[preg_replace('/^'.preg_quote($rootPath, '/').'/', '', $node->getPath())] = $node->getId();
 			if ($node instanceof Folder) {
-				if ($node->getName() === ExportDestination::EXPORT_FOLDER_NAME) {
-					continue;
-				}
 				$this->collectIds($node, $rootPath, $nodeFilter, $objectIds);
 			} elseif (!($node instanceof File)) {
 				throw new UserMigrationException("Unsupported node type: ".get_class($node));
