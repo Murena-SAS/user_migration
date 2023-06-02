@@ -95,8 +95,8 @@ class UserExportJob extends QueuedJob {
 			}
 			$defaults = new Defaults();
 			$instanceName = strtolower($defaults->getName());
-			$uid = !str_contains($user, '@') ? $user : explode('@', $user)[0];
-			$exportFilename = $uid . '-' . $instanceName . '-export_' . date('Y-m-d_H-i') . '.zip';
+			$uid = explode('@', $user)[0];
+			$exportFilename = $uid . '_' . $instanceName . '-export_' . date('Y-m-d_H-i') . '.zip';
 			$exportDestination = new UserFolderExportDestination($exportFolder, $exportFilename);
 
 			$this->migrationService->export($exportDestination, $userObject, $migrators);
