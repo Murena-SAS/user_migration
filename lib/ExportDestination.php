@@ -51,8 +51,8 @@ class ExportDestination implements IExportDestination {
 	 */
 	public function __construct($r, string $path) {
 		$defaults = new Defaults();
-		$name = strtolower($defaults->getName());
-		$this->exportFileRegex = "/-$name-" . static::EXPORT_FILE_REGEX;;
+		$instanceName = strtolower($defaults->getName());
+		$this->exportFileRegex = "/_$instanceName-" . static::EXPORT_FILE_REGEX;;
 		$this->streamer = new ZipStreamer(
 			[
 				'outstream' => $r,
