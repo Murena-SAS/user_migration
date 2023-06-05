@@ -28,22 +28,31 @@ namespace OCA\UserMigration;
 
 use OCP\Files\File;
 use OCP\Files\Folder;
+use OCP\Defaults;
 use OCP\UserMigration\IExportDestination;
 use OCP\UserMigration\UserMigrationException;
 use ZipStreamer\COMPR;
 use ZipStreamer\ZipStreamer;
 
 class ExportDestination implements IExportDestination {
-	public const EXPORT_FILENAME = 'user.nextcloud_export';
+
+	public const EXPORT_FOLDER_NAME = 'Exports';
+
+	public const EXPORT_FILE_REGEX = 'export_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}.zip$/';
 
 	protected ZipStreamer $streamer;
 
 	protected string $path;
 
+	public string $exportFileRegex;
+
 	/**
 	 * @param resource $r resource to write the export into
 	 */
 	public function __construct($r, string $path) {
+		$defaults = new Defaults();
+		$instanceName = strtolower($defaults->getName());
+		$this->exportFileRegex = "/_$instanceName-" . static::EXPORT_FILE_REGEX;;
 		$this->streamer = new ZipStreamer(
 			[
 				'outstream' => $r,
@@ -100,7 +109,7 @@ class ExportDestination implements IExportDestination {
 				continue;
 			}
 			if ($node instanceof File) {
-				if ($node->getName() === static::EXPORT_FILENAME) {
+				if (preg_match($this->exportFileRegex, $node->getName())) {
 					/* Skip previous user export file */
 					// FIXME only ignore root one using getPath()
 					continue;

@@ -31,6 +31,7 @@ use OCA\UserMigration\AppInfo\Application;
 use OCA\UserMigration\ExportDestination;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
+use OCP\Files\NotFoundException;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -116,9 +117,12 @@ class Notifier implements INotifier {
 	public function handleExportDone(INotification $notification, string $languageCode): INotification {
 		$l = $this->l10nFactory->get(Application::APP_ID, $languageCode);
 		$param = $notification->getSubjectParameters();
-
+		$exportFilename = NULL;
 		$sourceUser = $this->getUser($param['sourceUser']);
-		$exportFile = $this->getExportFile($sourceUser);
+		if (isset($param['fileName'])) {
+			$exportFilename = $param['fileName'];
+		}
+		$exportFile = $this->getExportFile($sourceUser, $exportFilename);
 
 		$path = rtrim($exportFile->getPath(), '/');
 		if (strpos($path, '/' . $notification->getUser() . '/files/') === 0) {
@@ -227,11 +231,15 @@ class Notifier implements INotifier {
 		throw new \InvalidArgumentException('User not found');
 	}
 
-	protected function getExportFile(IUser $user): File {
-		$userFolder = $this->root->getUserFolder($user->getUID());
-		$file = $userFolder->get(ExportDestination::EXPORT_FILENAME);
-		if (!$file instanceof File) {
-			throw new \InvalidArgumentException('User export is not a file');
+	protected function getExportFile(IUser $user, string $fileName = NULL): File {
+		if ($fileName === NULL) {
+			throw new \InvalidArgumentException('User export is a Null file');
+		}
+		try {
+			$userFolder = $this->root->getUserFolder($user->getUID())->get(ExportDestination::EXPORT_FOLDER_NAME);
+			$file = $userFolder->get($fileName);
+		} catch (NotFoundException $e) {
+			throw new \InvalidArgumentException('User export file not found');
 		}
 		return $file;
 	}

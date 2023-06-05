@@ -30,9 +30,12 @@ use OCA\UserMigration\Db\UserExport;
 use OCA\UserMigration\Db\UserExportMapper;
 use OCA\UserMigration\Service\UserMigrationService;
 use OCA\UserMigration\UserFolderExportDestination;
+use OCA\UserMigration\ExportDestination;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\Files\IRootFolder;
+use OCP\Files\NotFoundException;
+use OCP\Defaults;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Notification\IManager as NotificationManager;
@@ -85,10 +88,19 @@ class UserExportJob extends QueuedJob {
 			$export->setStatus(UserExport::STATUS_STARTED);
 			$this->mapper->update($export);
 			$userFolder = $this->root->getUserFolder($user);
-			$exportDestination = new UserFolderExportDestination($userFolder);
+			try {
+				$exportFolder = $userFolder->get(ExportDestination::EXPORT_FOLDER_NAME);
+			} catch (NotFoundException $e) {
+				$exportFolder = $userFolder->newFolder(ExportDestination::EXPORT_FOLDER_NAME);
+			}
+			$defaults = new Defaults();
+			$instanceName = strtolower($defaults->getName());
+			$uid = explode('@', $user)[0];
+			$exportFilename = $uid . '_' . $instanceName . '-export_' . date('Y-m-d_H-i') . '.zip';
+			$exportDestination = new UserFolderExportDestination($exportFolder, $exportFilename);
 
 			$this->migrationService->export($exportDestination, $userObject, $migrators);
-			$this->successNotification($export);
+			$this->successNotification($export, $exportFilename);
 		} catch (\Throwable $e) {
 			$this->logger->error($e->getMessage(), ['exception' => $e]);
 			$this->failedNotication($export);
@@ -110,7 +122,7 @@ class UserExportJob extends QueuedJob {
 		$this->notificationManager->notify($notification);
 	}
 
-	private function successNotification(UserExport $export): void {
+	private function successNotification(UserExport $export, string $fileName): void {
 		// Send notification to user
 		$notification = $this->notificationManager->createNotification();
 		$notification->setUser($export->getSourceUser())
@@ -118,6 +130,7 @@ class UserExportJob extends QueuedJob {
 			->setDateTime($this->time->getDateTime())
 			->setSubject('exportDone', [
 				'sourceUser' => $export->getSourceUser(),
+				'fileName' => $fileName,
 			])
 			->setObject('export', (string)$export->getId());
 		$this->notificationManager->notify($notification);

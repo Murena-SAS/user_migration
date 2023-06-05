@@ -41,6 +41,7 @@ use OCP\Files\NotFoundException;
 use OCP\IL10N;
 use OCP\ITagManager;
 use OCP\IUser;
+use OCP\Defaults;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use OCP\SystemTag\TagNotFoundException;
@@ -73,13 +74,16 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 
 	protected IL10N $l10n;
 
+	protected Defaults $defaults;
+
 	public function __construct(
 		IRootFolder $rootFolder,
 		ITagManager $tagManager,
 		ISystemTagManager $systemTagManager,
 		ISystemTagObjectMapper $systemTagMapper,
 		ICommentsManager $commentsManager,
-		IL10N $l10n
+		IL10N $l10n,
+		Defaults $defaults
 	) {
 		$this->root = $rootFolder;
 		$this->tagManager = $tagManager;
@@ -87,6 +91,7 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 		$this->systemTagMapper = $systemTagMapper;
 		$this->commentsManager = $commentsManager;
 		$this->l10n = $l10n;
+		$this->defaults = $defaults;
 	}
 
 	/**
@@ -101,16 +106,12 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 
 		$size = $this->estimateFolderSize($userFolder, $nodeFilter) / 1024;
 
-		// Export file itself is not exported so we subtract it if existing
+		// Ignore Exports folder
 		try {
-			$exportFile = $userFolder->get(ExportDestination::EXPORT_FILENAME);
-			if (!($exportFile instanceof File)) {
-				throw new \InvalidArgumentException('User export is not a file');
-			}
-
-			$size -= $exportFile->getSize() / 1024;
+			$exportFolder = $userFolder->get(ExportDestination::EXPORT_FOLDER_NAME);
+			$size -= $exportFolder->getSize() / 1024;
 		} catch (NotFoundException $e) {
-			// No size subtraction needed if export file doesn't exist
+			// No Exports folder found, so no need to remove its space
 		}
 
 		try {
@@ -189,8 +190,6 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 		}
 
 		$objectIds = $this->collectIds($userFolder, $userFolder->getPath(), $nodeFilter);
-		unset($objectIds[ExportDestination::EXPORT_FILENAME]);
-
 		$output->writeln("Exporting file tags…");
 
 		$tagger = $this->tagManager->load(Application::APP_ID, [], false, $uid);
@@ -254,8 +253,12 @@ class FilesMigrator implements IMigrator, ISizeEstimationMigrator {
 	 */
 	private function collectIds(Folder $folder, string $rootPath, ?callable $nodeFilter = null, array &$objectIds = []): array {
 		$nodes = $folder->getDirectoryListing();
+		$instanceName = $this->defaults->getName();
 		foreach ($nodes as $node) {
 			if (($nodeFilter !== null) && !$nodeFilter($node)) {
+				continue;
+			}
+			if ($node instanceof File && preg_match("/-$instanceName-" . ExportDestination::EXPORT_FILE_REGEX, $node->getName())) {
 				continue;
 			}
 			$objectIds[preg_replace('/^'.preg_quote($rootPath, '/').'/', '', $node->getPath())] = $node->getId();
